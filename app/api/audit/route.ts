@@ -33,6 +33,15 @@ export async function POST(req: Request) {
     // 5. Insert audit record into audits table
     const audit = await createAudit(user.id, normalizedUrl);
 
+    // 5.1 Insert Lead record
+    await supabaseAdmin
+      .from('leads')
+      .insert({
+        email: email,
+        website_url: normalizedUrl,
+        audit_id: audit.id
+      });
+
     // 6. Trigger background job via Inngest
     await inngest.send({
       name: 'audit/requested',
