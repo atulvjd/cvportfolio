@@ -1,36 +1,75 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# WebsiteScope Deployment Guide
 
-## Getting Started
+WebsiteScope is an AI-powered website audit tool designed for agencies to generate leads. This guide outlines the steps to deploy the application to Vercel.
 
-First, run the development server:
+## 🚀 Deployment Steps
 
+### 1. Supabase Setup
+- Create a new project in [Supabase](https://supabase.com).
+- Run the SQL in `database/schema.sql` within the Supabase SQL Editor.
+- Go to **Storage** and create a public bucket named `audit-reports`.
+- Enable **Magic Link** authentication in **Authentication > Providers > Email**.
+
+### 2. Inngest Setup
+- Create a free account at [Inngest.com](https://www.inngest.com/).
+- Get your `INNGEST_EVENT_KEY` and `INNGEST_SIGNING_KEY`.
+- Connect your Vercel deployment to Inngest via the [Inngest Cloud Dashboard](https://app.inngest.com).
+
+### 3. Vercel Configuration
+1. Push your code to a GitHub repository.
+2. Connect the repository to Vercel.
+3. Configure the following environment variables:
+
+#### App & Next.js
+- `NEXT_PUBLIC_APP_URL`: Your production URL (e.g., `https://your-app.vercel.app`)
+
+#### Supabase
+- `NEXT_PUBLIC_SUPABASE_URL`: From Supabase API settings.
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: From Supabase API settings.
+- `SUPABASE_SERVICE_ROLE_KEY`: From Supabase API settings (Required for admin/server-side operations).
+
+#### OpenAI
+- `OPENAI_API_KEY`: Your OpenAI API key for AI-driven analysis.
+
+#### Resend
+- `RESEND_API_KEY`: For sending audit completion email notifications.
+
+#### Inngest
+- `INNGEST_EVENT_KEY`: From Inngest.
+- `INNGEST_SIGNING_KEY`: From Inngest.
+
+#### Rate Limiting (Optional - Upstash Redis)
+- `UPSTASH_REDIS_REST_URL`: For API rate limiting.
+- `UPSTASH_REDIS_REST_TOKEN`: For API rate limiting.
+
+### 4. Deploy
+- Click **Deploy** on Vercel.
+- Once deployed, Inngest will automatically discover your functions via the `/api/inngest` endpoint.
+
+---
+
+## 🛠️ Operational Commands
+
+### Local Development
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Run in another terminal for background jobs
+npx inngest-cli dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Production Build
+```bash
+npm run build
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 📋 QA Checklist
+- [ ] Submit a URL/Email from the landing page.
+- [ ] Verify audit record is created in Supabase `audits` and `leads` tables.
+- [ ] Monitor Inngest dashboard for successful `audit-worker` execution.
+- [ ] Verify AI report is generated and stored in `audit_results`.
+- [ ] Confirm receipt of the "Audit Ready" email via Resend.
+- [ ] View the live report at `/report/[id]`.
+- [ ] Download the PDF and verify its content.
