@@ -1,50 +1,51 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/db';
-import { inngest } from '@/services/queue'; // Assuming we setup inngest
+import { createUserIfNotExists, createAudit } from '@/lib/db';
+import { inngest } from '@/services/queue';
+import * as z from 'zod';
+
+const auditSchema = z.object({
+  website_url: z.string().url(),
+  email: z.string().email(),
+});
 
 export async function POST(req: Request) {
   try {
-    const { url, email } = await req.json();
+    const body = await req.json();
+    
+    // 1. Validate input using Zod
+    const { website_url, email } = auditSchema.parse(body);
 
-    if (!url || !email) {
-      return NextResponse.json({ error: 'URL and Email are required' }, { status: 400 });
+    // 2. Normalize URL (Basic)
+    let normalizedUrl = website_url;
+    if (!normalizedUrl.startsWith('http')) {
+      normalizedUrl = `https://${normalizedUrl}`;
     }
 
-    // 1. Create or get user
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .upsert({ email }, { onConflict: 'email' })
-      .select()
-      .single();
+    // 3 & 4. Check if user exists, if not create
+    const user = await createUserIfNotExists(email);
 
-    if (userError) throw userError;
+    // 5. Insert audit record into audits table
+    const audit = await createAudit(user.id, normalizedUrl);
 
-    // 2. Create audit record
-    const { data: audit, error: auditError } = await supabase
-      .from('audits')
-      .insert({
-        user_id: user.id,
-        website_url: url,
-        status: 'pending',
-      })
-      .select()
-      .single();
+    // 6. Trigger background job via Inngest
+    await inngest.send({
+      name: 'audit/requested',
+      data: { 
+        auditId: audit.id, 
+        websiteUrl: normalizedUrl 
+      },
+    });
 
-    if (auditError) throw auditError;
-
-    // 3. Trigger background audit process via Inngest
-    // await inngest.send({
-    //   name: 'audit/started',
-    //   data: { auditId: audit.id, url: url },
-    // });
-
+    // 7. Return the audit_id
     return NextResponse.json({ 
-      message: 'Audit started successfully', 
       auditId: audit.id 
     });
 
   } catch (error: any) {
     console.error('API Audit Error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: 'Invalid input data', details: error.errors }, { status: 400 });
+    }
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }
