@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createUserIfNotExists, createAudit } from '@/lib/db';
+import { createUserIfNotExists, createAudit, supabaseAdmin } from '@/lib/db';
 import { inngest } from '@/services/queue';
 import * as z from 'zod';
 
@@ -15,16 +15,24 @@ export async function POST(req: Request) {
     // 1. Validate basic input
     const { website_url, email } = auditSchema.parse(body);
 
-    // 2. Normalize URL
+    // 2. Normalize and Sanitize URL
     let normalizedUrl = website_url.trim();
     if (!normalizedUrl.match(/^https?:\/\//)) {
       normalizedUrl = `https://${normalizedUrl}`;
     }
 
+    let parsedUrl;
     try {
-      new URL(normalizedUrl);
+      parsedUrl = new URL(normalizedUrl);
     } catch (e) {
       return NextResponse.json({ error: 'Invalid URL format' }, { status: 400 });
+    }
+
+    // SSRF Prevention: Block local and internal addresses
+    const hostname = parsedUrl.hostname.toLowerCase();
+    const restrictedHosts = ['localhost', '127.0.0.1', '0.0.0.0', '169.254.169.254'];
+    if (restrictedHosts.some(host => hostname === host || hostname.startsWith('10.') || hostname.startsWith('192.168.') || hostname.startsWith('172.16.'))) {
+       return NextResponse.json({ error: 'Restricted domain' }, { status: 403 });
     }
 
     // 3 & 4. Check if user exists, if not create
