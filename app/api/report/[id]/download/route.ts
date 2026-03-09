@@ -34,13 +34,18 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     }
 
     // 2. Generate PDF buffer
-    // Note: React-PDF renderToBuffer requires its dependencies to be correctly loaded.
-    // Since this runs in a Next.js server context, it should work fine.
     const pdfBuffer = await generatePDFBuffer(audit, results);
 
-    // 3. Return the PDF directly as a stream/buffer
-    // We could also upload to storage here, but for simple immediate download, 
-    // returning the buffer with correct headers is faster for the user.
+    // 3. (Optional) Upload to Storage for long-term access
+    // We'll do this in the background or await it if we want to ensure storage sync
+    try {
+      const { uploadPDFToStorage } = await import('@/services/report-generator');
+      await uploadPDFToStorage(id, pdfBuffer);
+    } catch (storageError) {
+      console.error('Storage Upload Error (Continuing anyway):', storageError);
+    }
+
+    // 4. Return the PDF directly as a stream/buffer
     return new Response(pdfBuffer, {
       status: 200,
       headers: {
