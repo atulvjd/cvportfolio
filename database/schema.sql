@@ -31,10 +31,20 @@ create table audit_results (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
+-- 4. Leads Table (For agency lead collection)
+create table leads (
+  id uuid primary key default uuid_generate_v4(),
+  email text not null,
+  website_url text not null,
+  audit_id uuid references audits(id),
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
 -- Enable Row Level Security (RLS)
 alter table users enable row level security;
 alter table audits enable row level security;
 alter table audit_results enable row level security;
+alter table leads enable row level security;
 
 -- Policies (Simple public read for now, or auth restricted)
 create policy "Users can view their own audits" on audits for select using (auth.uid() = user_id);
