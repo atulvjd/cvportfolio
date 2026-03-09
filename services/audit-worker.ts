@@ -1,6 +1,7 @@
 import { inngest } from "./queue";
 import { supabaseAdmin } from "@/lib/db";
 import { runLighthouseAudit } from "@/lib/lighthouse/runner";
+import { generateAIReport } from "./ai-analyzer";
 
 /**
  * Validates and sanitizes URL to prevent SSRF and other attacks.
@@ -78,21 +79,17 @@ export const processAudit = inngest.createFunction(
         if (error) throw error;
       });
 
-      // 5. Update audit status to "completed"
+      // 5. Run AI analysis
+      await step.run("run-ai-analysis", async () => {
+        await generateAIReport(auditId);
+      });
+
+      // 6. Update audit status to "completed"
       await step.run("update-status-to-completed", async () => {
         await supabaseAdmin
           .from('audits')
           .update({ status: 'completed' })
           .eq('id', auditId);
-      });
-
-      // 6. Trigger AI analysis (future step)
-      await step.sendEvent("trigger-ai-analysis", {
-        name: "audit/ai_analysis",
-        data: {
-          auditId,
-          lighthouseData: auditResult.raw,
-        }
       });
 
       console.info(`[${auditId}] Audit process completed successfully.`);
