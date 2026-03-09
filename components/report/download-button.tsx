@@ -19,24 +19,24 @@ export function DownloadButton({ auditId, className }: DownloadButtonProps) {
     try {
       const response = await fetch(`/api/report/${auditId}/download`);
       
-      if (!response.ok) {
-        throw new Error('Failed to download PDF report.');
+      const data = await response.json();
+      
+      if (!response.ok || !data.downloadUrl) {
+        throw new Error(data.error || 'Failed to generate PDF report.');
       }
 
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      // Open in a new tab for download or trigger current tab download
       const a = document.createElement('a');
-      a.href = url;
+      a.href = data.downloadUrl;
       a.download = `WebsiteScope-Audit-${auditId}.pdf`;
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
-      toast.success('Report downloaded successfully!');
-    } catch (error) {
+      toast.success('Report generated successfully!');
+    } catch (error: any) {
       console.error('Download Error:', error);
-      toast.error('Failed to generate PDF report. Please try again.');
+      toast.error(error.message || 'Failed to generate PDF report. Please try again.');
     } finally {
       setIsDownloading(false);
     }
