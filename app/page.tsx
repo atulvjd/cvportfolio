@@ -1,5 +1,96 @@
-import Hero from '@/components/marketing/Hero';
-import Features from '@/components/marketing/Features';
+import React from 'react';
+import AuditForm from '@/components/forms/AuditForm';
+import { Card, CardContent } from '@/components/ui/card';
+import { CheckCircle, Zap, Search, Accessibility, Smartphone } from 'lucide-react';
+
+const Hero = () => {
+  return (
+    <section className="relative flex flex-col lg:flex-row items-center justify-between min-h-[85vh] px-6 lg:px-24 py-12 gap-16 overflow-hidden bg-white">
+      {/* Background decoration */}
+      <div className="absolute top-0 left-0 w-full h-full -z-10 opacity-5 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-500 via-transparent to-transparent"></div>
+      
+      {/* Left side: Text and explanation */}
+      <div className="flex-1 space-y-8 max-w-2xl text-left">
+        <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-full font-semibold text-sm animate-in fade-in slide-in-from-top-4 duration-700">
+          <Zap className="w-4 h-4" /> Powered by GPT-4 and Google Lighthouse
+        </div>
+        
+        <h1 className="text-5xl lg:text-7xl font-extrabold tracking-tight text-slate-900 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+          Free AI <span className="text-blue-600">Website Audit</span>
+        </h1>
+        
+        <p className="text-xl text-slate-600 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-200">
+          Analyze your website’s SEO, performance, accessibility, and user experience in seconds. 
+          Get a professional report for your agency and your clients.
+        </p>
+
+        <div className="pt-4 animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-300">
+          <AuditForm />
+        </div>
+
+        <div className="flex flex-wrap gap-6 pt-8 animate-in fade-in delay-500">
+          <div className="flex items-center gap-2 text-slate-500 font-medium">
+            <CheckCircle className="w-5 h-5 text-green-500" /> SEO Analysis
+          </div>
+          <div className="flex items-center gap-2 text-slate-500 font-medium">
+            <CheckCircle className="w-5 h-5 text-green-500" /> Speed Tests
+          </div>
+          <div className="flex items-center gap-2 text-slate-500 font-medium">
+            <CheckCircle className="w-5 h-5 text-green-500" /> Accessibility
+          </div>
+        </div>
+      </div>
+
+      {/* Right side: Visual card showing example audit scores */}
+      <div className="flex-1 w-full max-w-xl animate-in fade-in zoom-in duration-1000 delay-200">
+        <Card className="border-slate-100 shadow-2xl shadow-blue-500/10 rounded-3xl overflow-hidden bg-slate-50/50 backdrop-blur-sm">
+          <CardContent className="p-8 space-y-8">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-slate-900 text-lg">Example Audit: mysite.com</h3>
+              <div className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold uppercase tracking-wider">
+                Healthy
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-6 bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center gap-2">
+                <div className="text-3xl font-black text-green-500">98</div>
+                <div className="text-xs font-bold text-slate-400 uppercase">Performance</div>
+                <Zap className="w-4 h-4 text-yellow-400" />
+              </div>
+              <div className="p-6 bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center gap-2">
+                <div className="text-3xl font-black text-blue-500">92</div>
+                <div className="text-xs font-bold text-slate-400 uppercase">SEO</div>
+                <Search className="w-4 h-4 text-blue-400" />
+              </div>
+              <div className="p-6 bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center gap-2">
+                <div className="text-3xl font-black text-purple-500">88</div>
+                <div className="text-xs font-bold text-slate-400 uppercase">UX Design</div>
+                <Accessibility className="w-4 h-4 text-purple-400" />
+              </div>
+              <div className="p-6 bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center gap-2">
+                <div className="text-3xl font-black text-pink-500">95</div>
+                <div className="text-xs font-bold text-slate-400 uppercase">Mobile</div>
+                <Smartphone className="w-4 h-4 text-pink-400" />
+              </div>
+            </div>
+
+            <div className="space-y-4 p-6 bg-white rounded-2xl border border-slate-100 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                <p className="text-sm font-medium text-slate-700">AI: Optimize your images for 12% faster loading.</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                <p className="text-sm font-medium text-slate-700">AI: Adding alt tags to 3 images will boost SEO.</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </section>
+  );
+};
 
 export default function Home() {
   return (
@@ -26,9 +117,6 @@ export default function Home() {
 
       {/* Hero Section */}
       <Hero />
-
-      {/* Features Section */}
-      <Features />
 
       {/* How It Works Section */}
       <section id="how-it-works" className="py-24 px-6 bg-slate-50">
