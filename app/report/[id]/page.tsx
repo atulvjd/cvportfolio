@@ -6,6 +6,7 @@ import { PerformanceMetrics } from "@/components/report/performance-metrics";
 import { AISection } from "@/components/report/ai-section";
 import { QuickFixes } from "@/components/report/quick-fixes";
 import { TechnicalFixes } from "@/components/report/technical-fixes";
+import { DownloadButton } from "@/components/report/download-button";
 import { 
   Zap, 
   Search, 
@@ -18,7 +19,8 @@ import {
   ShieldCheck,
   AlertCircle,
   Loader2,
-  Clock
+  Clock,
+  FileText
 } from 'lucide-react';
 import Link from 'next/link';
 import { Badge } from "@/components/ui/badge";
