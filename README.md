@@ -28,8 +28,8 @@ WebsiteScope is an AI-powered website audit tool designed for agencies to genera
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: From Supabase API settings.
 - `SUPABASE_SERVICE_ROLE_KEY`: From Supabase API settings (Required for admin/server-side operations).
 
-#### OpenAI
-- `OPENAI_API_KEY`: Your OpenAI API key for AI-driven analysis.
+#### Gemini AI
+- `GEMINI_API_KEY`: Your Google Gemini API key for AI-driven analysis.
 
 #### Resend
 - `RESEND_API_KEY`: For sending audit completion email notifications.

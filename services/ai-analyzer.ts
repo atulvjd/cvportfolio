@@ -1,5 +1,5 @@
 import { supabaseAdmin } from "@/lib/db";
-import openai from "@/lib/ai/openai-client";
+import { geminiModel } from "@/lib/ai/gemini-client";
 import { generateAuditPrompt } from "@/lib/ai/prompts";
 
 /**
@@ -22,10 +22,10 @@ function extractLighthouseKeyInfo(lhr: any) {
 }
 
 /**
- * Generates an AI-driven audit report from raw Lighthouse data.
+ * Generates an AI-driven audit report from raw Lighthouse data using Google Gemini.
  */
 export async function generateAIReport(auditId: string) {
-  console.info(`[${auditId}] Starting AI Analysis...`);
+  console.info(`[${auditId}] Starting Gemini AI Analysis...`);
 
   try {
     // 1. Fetch audit result from database
@@ -55,28 +55,30 @@ export async function generateAIReport(auditId: string) {
       failing_audits
     );
 
-    // 4. Send to OpenAI with retries
+    // 4. Send to Gemini with retries
     let aiReport;
     let attempts = 0;
     const maxAttempts = 2;
 
     while (attempts <= maxAttempts) {
       try {
-        const completion = await openai.chat.completions.create({
-          model: 'gpt-4o-mini',
-          messages: [{ role: 'system', content: prompt }],
-          temperature: 0.4,
-          response_format: { type: 'json_object' },
-        });
-
-        const content = completion.choices[0].message.content;
-        if (!content) throw new Error('OpenAI returned empty response.');
+        const result = await geminiModel.generateContent(prompt);
+        const responseText = result.response.text();
         
-        aiReport = JSON.parse(content);
+        if (!responseText) throw new Error('Gemini returned empty response.');
+        
+        try {
+          aiReport = JSON.parse(responseText);
+        } catch (parseError) {
+          console.error(`[${auditId}] JSON Parse Error (Attempt ${attempts}):`, parseError);
+          // Fallback parsing if needed or retry
+          throw parseError;
+        }
+        
         break; // Success!
       } catch (err) {
         attempts++;
-        console.error(`[${auditId}] OpenAI Error (Attempt ${attempts}):`, err);
+        console.error(`[${auditId}] Gemini API Error (Attempt ${attempts}):`, err);
         if (attempts > maxAttempts) throw err;
         await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait before retry
       }
@@ -90,7 +92,7 @@ export async function generateAIReport(auditId: string) {
 
     if (updateError) throw updateError;
 
-    console.info(`[${auditId}] AI Analysis completed successfully.`);
+    console.info(`[${auditId}] Gemini AI Analysis completed successfully.`);
     return aiReport;
 
   } catch (error: any) {

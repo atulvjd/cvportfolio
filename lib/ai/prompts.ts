@@ -33,34 +33,32 @@ ${failing_audits.join('\n')}
 6.  **Mobile Optimization**: Identify mobile-specific issues and recommendations.
 7.  **Quick Wins**: List 3-4 easy-to-implement improvements that offer immediate value.
 8.  **Technical Fixes**: List 2-3 more advanced improvements.
-9.  **Overall Score Explanation**: A brief explanation of why the website received its current scores.
 
 Return the analysis in the following JSON format ONLY:
 
 {
-  "summary": "...",
+  "summary": "The executive summary text here.",
   "seo": {
     "issues": ["Issue 1", "Issue 2"],
-    "recommendations": ["Rec 1", "Rec 2"]
+    "recommendations": ["Recommendation 1", "Recommendation 2"]
   },
   "performance": {
     "issues": ["Issue 1", "Issue 2"],
-    "recommendations": ["Rec 1", "Rec 2"]
+    "recommendations": ["Recommendation 1", "Recommendation 2"]
   },
   "accessibility": {
     "issues": ["Issue 1", "Issue 2"],
-    "recommendations": ["Rec 1", "Rec 2"]
+    "recommendations": ["Recommendation 1", "Recommendation 2"]
   },
   "ux": {
     "suggestions": ["Suggestion 1", "Suggestion 2"]
   },
   "mobile": {
     "issues": ["Issue 1", "Issue 2"],
-    "recommendations": ["Rec 1", "Rec 2"]
+    "recommendations": ["Recommendation 1", "Recommendation 2"]
   },
   "quick_fixes": ["Fix 1", "Fix 2"],
-  "technical_fixes": ["Fix 1", "Fix 2"],
-  "overall_score_explanation": "..."
+  "technical_fixes": ["Fix 1", "Fix 2"]
 }
 
 Keep the tone professional yet accessible. Focus on actionable insights that will help the business owner grow their online presence.
