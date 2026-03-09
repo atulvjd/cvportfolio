@@ -4,7 +4,7 @@ import { inngest } from '@/services/queue';
 import * as z from 'zod';
 
 const auditSchema = z.object({
-  website_url: z.string().url(),
+  website_url: z.string().min(1),
   email: z.string().email(),
 });
 
@@ -12,13 +12,19 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     
-    // 1. Validate input using Zod
+    // 1. Validate basic input
     const { website_url, email } = auditSchema.parse(body);
 
-    // 2. Normalize URL (Basic)
-    let normalizedUrl = website_url;
-    if (!normalizedUrl.startsWith('http')) {
+    // 2. Normalize URL
+    let normalizedUrl = website_url.trim();
+    if (!normalizedUrl.match(/^https?:\/\//)) {
       normalizedUrl = `https://${normalizedUrl}`;
+    }
+
+    try {
+      new URL(normalizedUrl);
+    } catch (e) {
+      return NextResponse.json({ error: 'Invalid URL format' }, { status: 400 });
     }
 
     // 3 & 4. Check if user exists, if not create
