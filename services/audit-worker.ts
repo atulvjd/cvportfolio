@@ -92,6 +92,23 @@ export const processAudit = inngest.createFunction(
           .eq('id', auditId);
       });
 
+      // 7. Send completion email notification
+      await step.run("send-completion-email", async () => {
+        const { data: user, error: userError } = await supabaseAdmin
+          .from('audits')
+          .select('users(email)')
+          .eq('id', auditId)
+          .single();
+
+        if (userError || !user?.users?.email) {
+          console.error('Could not find user email for notification.');
+          return;
+        }
+
+        const { sendAuditCompletionEmail } = await import('./email-service');
+        await sendAuditCompletionEmail(user.users.email, websiteUrl, auditId);
+      });
+
       console.info(`[${auditId}] Audit process completed successfully.`);
 
     } catch (error: any) {
