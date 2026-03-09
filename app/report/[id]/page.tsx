@@ -1,188 +1,279 @@
-'use client';
-
-import React, { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
-import { supabase } from '@/lib/db';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
-import { Loader2, CheckCircle, AlertCircle, Clock, Zap, Search, Accessibility, Smartphone, ArrowLeft } from 'lucide-react';
+import React from 'react';
+import { supabaseAdmin } from "@/lib/db";
+import { OverallScore } from "@/components/report/overall-score";
+import { ScoreCard } from "@/components/report/score-card";
+import { PerformanceMetrics } from "@/components/report/performance-metrics";
+import { AISection } from "@/components/report/ai-section";
+import { QuickFixes } from "@/components/report/quick-fixes";
+import { TechnicalFixes } from "@/components/report/technical-fixes";
+import { 
+  Zap, 
+  Search, 
+  Accessibility, 
+  Smartphone, 
+  Globe, 
+  Calendar, 
+  ArrowLeft,
+  LayoutDashboard,
+  ShieldCheck,
+  AlertCircle,
+  Loader2,
+  Clock
+} from 'lucide-react';
 import Link from 'next/link';
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { notFound } from 'next/navigation';
+import { Metadata } from 'next';
 
-export default function ReportPage() {
-  const { id } = useParams();
-  const [status, setStatus] = useState<'pending' | 'processing' | 'completed' | 'failed'>('pending');
-  const [websiteUrl, setWebsiteUrl] = useState('');
-  const [results, setResults] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);
+// Generate dynamic metadata
+export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+  const { id } = params;
+  const { data: audit } = await supabaseAdmin
+    .from('audits')
+    .select('website_url')
+    .eq('id', id)
+    .single();
 
-  useEffect(() => {
-    if (!id) return;
+  return {
+    title: `Audit Report: ${audit?.website_url || 'WebsiteScope'}`,
+    description: `Detailed AI-powered website audit and analysis for ${audit?.website_url}.`,
+  };
+}
 
-    const fetchStatus = async () => {
-      const { data, error } = await supabase
-        .from('audits')
-        .select('status, website_url, audit_results(*)')
-        .eq('id', id)
-        .single();
+export default async function ReportPage({ params }: { params: { id: string } }) {
+  const { id } = params;
 
-      if (error) {
-        console.error('Error fetching audit:', error);
-        setError('Failed to fetch audit status.');
-        return;
-      }
-
-      setStatus(data.status);
-      setWebsiteUrl(data.website_url);
-      if (data.audit_results && data.audit_results.length > 0) {
-        setResults(data.audit_results[0]);
-      }
-    };
-
-    fetchStatus();
-
-    // Set up real-time subscription for status updates
-    const subscription = supabase
-      .channel(`audit-status-${id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'audits',
-          filter: `id=eq.${id}`,
-        },
-        (payload) => {
-          setStatus(payload.new.status);
-        }
+  // Fetch audit and results
+  const { data: audit, error } = await supabaseAdmin
+    .from('audits')
+    .select(`
+      *,
+      audit_results (
+        performance_score,
+        seo_score,
+        accessibility_score,
+        ux_score,
+        mobile_score,
+        ai_report,
+        raw_lighthouse_data,
+        created_at
       )
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'audit_results',
-          filter: `audit_id=eq.${id}`,
-        },
-        (payload) => {
-          setResults(payload.new);
-        }
-      )
-      .subscribe();
+    `)
+    .eq('id', id)
+    .single();
 
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [id]);
+  if (error || !audit) {
+    notFound();
+  }
 
-  if (error) {
+  const status = audit.status;
+  const results = audit.audit_results?.[0];
+  const aiReport = results?.ai_report;
+  const lighthouse = results?.raw_lighthouse_data;
+
+  // Loading states are handled by Next.js loading.tsx or inline checks if we want simpler
+  if (status === 'pending' || status === 'processing') {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6">
-        <Card className="max-w-md w-full text-center p-8 space-y-4">
-          <AlertCircle className="w-12 h-12 text-red-500 mx-auto" />
-          <h1 className="text-2xl font-bold">Error</h1>
-          <p className="text-slate-600">{error}</p>
-          <Link href="/" className="inline-block text-blue-600 hover:underline">Go back home</Link>
-        </Card>
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 space-y-8 text-white">
+         <div className="relative">
+            <div className="absolute inset-0 bg-blue-600/20 blur-3xl animate-pulse"></div>
+            <Loader2 className="w-16 h-16 text-blue-500 animate-spin relative z-10" />
+         </div>
+         <div className="text-center space-y-4 max-w-md relative z-10">
+            <h1 className="text-3xl font-black tracking-tighter">Analyzing your website...</h1>
+            <p className="text-slate-400 font-medium">Our AI is currently auditing your website for performance, SEO, and accessibility. This usually takes 30-60 seconds.</p>
+         </div>
+         <div className="flex items-center gap-4 text-xs font-bold uppercase tracking-widest text-slate-500">
+            <span className={status === 'pending' ? 'text-blue-500' : 'text-green-500'}>1. Queued</span>
+            <span className="text-slate-800">→</span>
+            <span className={status === 'processing' ? 'text-blue-500 animate-pulse' : 'text-slate-800'}>2. Auditing</span>
+            <span className="text-slate-800">→</span>
+            <span className="text-slate-800">3. AI Analysis</span>
+         </div>
       </div>
     );
   }
 
-  return (
-    <div className="min-h-screen bg-slate-50 p-6 lg:p-12">
-      <div className="max-w-5xl mx-auto space-y-8">
-        <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <Link href="/dashboard" className="flex items-center gap-2 text-sm text-slate-500 hover:text-blue-600 transition-colors mb-4">
-              <ArrowLeft className="w-4 h-4" /> Back to Dashboard
+  if (status === 'failed') {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 space-y-8 text-white">
+         <AlertCircle className="w-20 h-20 text-red-500" />
+         <div className="text-center space-y-4 max-w-md">
+            <h1 className="text-3xl font-black tracking-tighter text-red-500">Audit Failed</h1>
+            <p className="text-slate-400 font-medium">We encountered an error while analyzing your website. This could be due to a slow connection or the website blocking our crawlers.</p>
+            <Link href="/" className="inline-block px-8 py-3 bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl font-bold transition-all mt-4">
+              Try Again
             </Link>
-            <h1 className="text-3xl font-bold text-slate-900">Audit Report</h1>
-            <p className="text-slate-500 font-medium">{websiteUrl}</p>
-          </div>
-          <Badge variant={status === 'completed' ? 'default' : status === 'failed' ? 'destructive' : 'secondary'} className="h-fit py-1.5 px-4 text-sm capitalize">
-            {status}
-          </Badge>
-        </header>
-
-        {status === 'pending' && (
-          <Card className="p-12 text-center space-y-6">
-            <Clock className="w-16 h-16 text-blue-500 mx-auto animate-pulse" />
-            <div className="space-y-2">
-              <h2 className="text-2xl font-bold text-slate-900">Your audit has been queued</h2>
-              <p className="text-slate-500 max-w-md mx-auto">We are waiting for an available worker to start the analysis. This usually takes less than a minute.</p>
-            </div>
-            <Progress value={25} className="w-full max-w-md mx-auto h-2" />
-          </Card>
-        )}
-
-        {status === 'processing' && (
-          <Card className="p-12 text-center space-y-6">
-            <Loader2 className="w-16 h-16 text-blue-500 mx-auto animate-spin" />
-            <div className="space-y-2">
-              <h2 className="text-2xl font-bold text-slate-900">Running website analysis</h2>
-              <p className="text-slate-500 max-w-md mx-auto">Lighthouse is currently auditing your website for performance, SEO, and accessibility. This may take up to 2 minutes.</p>
-            </div>
-            <Progress value={65} className="w-full max-w-md mx-auto h-2" />
-          </Card>
-        )}
-
-        {status === 'failed' && (
-          <Card className="p-12 text-center space-y-6 bg-red-50 border-red-100">
-            <AlertCircle className="w-16 h-16 text-red-500 mx-auto" />
-            <div className="space-y-2">
-              <h2 className="text-2xl font-bold text-red-900">Audit Failed</h2>
-              <p className="text-red-700 max-w-md mx-auto">We encountered an error while analyzing your website. This could be due to a slow connection or the website blocking our crawlers.</p>
-            </div>
-            <Button asChild variant="outline" className="border-red-200 hover:bg-red-100 text-red-700">
-              <Link href="/">Try Again</Link>
-            </Button>
-          </Card>
-        )}
-
-        {status === 'completed' && results && (
-          <div className="space-y-8 animate-in fade-in duration-700">
-            {/* Summary Score Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              {[
-                { label: 'Performance', score: results.performance_score, icon: <Zap className="text-yellow-500" /> },
-                { label: 'SEO', score: results.seo_score, icon: <Search className="text-blue-500" /> },
-                { label: 'Accessibility', score: results.accessibility_score, icon: <Accessibility className="text-green-500" /> },
-                { label: 'UX Design', score: results.ux_score, icon: <Smartphone className="text-purple-500" /> },
-              ].map((item, i) => (
-                <Card key={i} className="text-center p-6 space-y-2 border-none shadow-sm">
-                  <div className="flex justify-center mb-2">{item.icon}</div>
-                  <div className={`text-4xl font-black ${item.score >= 90 ? 'text-green-500' : item.score >= 50 ? 'text-yellow-500' : 'text-red-500'}`}>
-                    {item.score}
-                  </div>
-                  <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">{item.label}</div>
-                </Card>
-              ))}
-            </div>
-
-            {/* AI Report Section */}
-            <Card className="border-none shadow-sm overflow-hidden">
-              <CardHeader className="bg-slate-900 text-white">
-                <CardTitle className="flex items-center gap-2">
-                  <div className="w-6 h-6 bg-blue-500 rounded flex items-center justify-center text-xs">AI</div>
-                  Executive Summary
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-8">
-                <p className="text-slate-700 leading-relaxed text-lg italic">
-                  "{results.ai_report?.executive_summary || 'Analysis complete. AI report being generated...'}"
-                </p>
-              </CardContent>
-            </Card>
-
-            {/* Detail sections could go here */}
-            <div className="flex justify-center pt-8">
-               <Button className="bg-blue-600 hover:bg-blue-700 h-12 px-8 font-bold">
-                 Download Full PDF Report
-               </Button>
-            </div>
-          </div>
-        )}
+         </div>
       </div>
+    );
+  }
+
+  // Calculate Overall Score
+  const overallScore = Math.round(
+    ((results?.performance_score || 0) + 
+     (results?.seo_score || 0) + 
+     (results?.accessibility_score || 0) + 
+     (results?.ux_score || 0)) / 4
+  );
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-white selection:bg-blue-500/30">
+      {/* Header / Nav */}
+      <header className="sticky top-0 z-50 w-full border-b border-slate-900 bg-slate-950/80 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+          <div className="flex items-center gap-6">
+            <Link href="/dashboard" className="p-2 hover:bg-slate-900 rounded-lg transition-colors text-slate-400 hover:text-white">
+              <ArrowLeft className="w-5 h-5" />
+            </Link>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-black text-sm">W</div>
+              <Separator orientation="vertical" className="h-6 bg-slate-800" />
+              <div className="space-y-0.5">
+                <h1 className="text-sm font-black tracking-tight text-white">{audit.website_url}</h1>
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest flex items-center gap-2">
+                   <Calendar className="w-3 h-3" /> {new Date(results.created_at).toLocaleDateString()}
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <Badge className="bg-green-500/10 text-green-500 border-none font-black px-3 py-1 text-[10px] uppercase tracking-widest flex items-center gap-1.5">
+              <ShieldCheck className="w-3 h-3" /> Verified Audit
+            </Badge>
+            <button className="hidden md:block px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-all text-xs">
+              Download PDF
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-6 py-12 space-y-12">
+        {/* Top Summary Section */}
+        <section className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-center">
+          <div className="lg:col-span-1">
+             <OverallScore score={overallScore} />
+          </div>
+          <div className="lg:col-span-2">
+             <Card className="bg-slate-900/40 border-slate-900 p-8">
+                <CardContent className="p-0 space-y-6">
+                   <div className="flex items-center gap-2 text-blue-500">
+                      <div className="w-6 h-6 bg-blue-500/10 rounded flex items-center justify-center text-[10px] font-black uppercase">AI</div>
+                      <span className="text-xs font-black uppercase tracking-widest">Executive Summary</span>
+                   </div>
+                   <p className="text-xl font-bold leading-relaxed text-slate-200 italic tracking-tight">
+                     "{aiReport?.summary || 'Generating summary...'}"
+                   </p>
+                </CardContent>
+             </Card>
+          </div>
+        </section>
+
+        {/* Score Cards Grid */}
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <ScoreCard 
+            label="Performance" 
+            score={results.performance_score} 
+            icon={<Zap className="w-5 h-5 text-yellow-500" />}
+            description="Measures load speed, responsiveness, and visual stability."
+          />
+          <ScoreCard 
+            label="SEO" 
+            score={results.seo_score} 
+            icon={<Search className="w-5 h-5 text-blue-500" />}
+            description="Search engine visibility and structured data quality."
+          />
+          <ScoreCard 
+            label="Accessibility" 
+            score={results.accessibility_score} 
+            icon={<Accessibility className="w-5 h-5 text-green-500" />}
+            description="Barrier-free access for all users, including assistive tech."
+          />
+          <ScoreCard 
+            label="Mobile / UX" 
+            score={results.ux_score} 
+            icon={<Smartphone className="w-5 h-5 text-purple-500" />}
+            description="Touch targets, viewport optimization, and layout usability."
+          />
+        </section>
+
+        {/* Tabs Detailed Content */}
+        <section className="space-y-12">
+          <Tabs defaultValue="overview" className="space-y-12">
+            <TabsList className="bg-slate-900 border-slate-800 h-14 p-1 rounded-xl">
+              <TabsTrigger value="overview" className="rounded-lg font-bold text-xs uppercase tracking-widest px-8 data-[state=active]:bg-slate-800">Overview</TabsTrigger>
+              <TabsTrigger value="performance" className="rounded-lg font-bold text-xs uppercase tracking-widest px-8 data-[state=active]:bg-slate-800">Performance</TabsTrigger>
+              <TabsTrigger value="seo" className="rounded-lg font-bold text-xs uppercase tracking-widest px-8 data-[state=active]:bg-slate-800">SEO</TabsTrigger>
+              <TabsTrigger value="accessibility" className="rounded-lg font-bold text-xs uppercase tracking-widest px-8 data-[state=active]:bg-slate-800">Accessibility</TabsTrigger>
+              <TabsTrigger value="ux" className="rounded-lg font-bold text-xs uppercase tracking-widest px-8 data-[state=active]:bg-slate-800">UX / Mobile</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="overview" className="space-y-12 outline-none">
+              <QuickFixes fixes={aiReport?.quick_fixes || []} />
+              <TechnicalFixes fixes={aiReport?.technical_fixes || []} />
+            </TabsContent>
+
+            <TabsContent value="performance" className="space-y-12 outline-none">
+              <PerformanceMetrics 
+                metrics={{
+                  fcp: results.raw_lighthouse_data?.audits?.['first-contentful-paint']?.numericValue || 0,
+                  lcp: results.raw_lighthouse_data?.audits?.['largest-contentful-paint']?.numericValue || 0,
+                  tbt: results.raw_lighthouse_data?.audits?.['total-blocking-time']?.numericValue || 0,
+                  cls: results.raw_lighthouse_data?.audits?.['cumulative-layout-shift']?.numericValue || 0,
+                }} 
+              />
+              <AISection 
+                title="Performance Analysis"
+                issues={aiReport?.performance?.issues || []}
+                recommendations={aiReport?.performance?.recommendations || []}
+                icon={<Zap className="w-5 h-5" />}
+              />
+            </TabsContent>
+
+            <TabsContent value="seo" className="outline-none">
+              <AISection 
+                title="SEO Strategy"
+                issues={aiReport?.seo?.issues || []}
+                recommendations={aiReport?.seo?.recommendations || []}
+                icon={<Search className="w-5 h-5" />}
+              />
+            </TabsContent>
+
+            <TabsContent value="accessibility" className="outline-none">
+              <AISection 
+                title="Accessibility Audit"
+                issues={aiReport?.accessibility?.issues || []}
+                recommendations={aiReport?.accessibility?.recommendations || []}
+                icon={<Accessibility className="w-5 h-5" />}
+              />
+            </TabsContent>
+
+            <TabsContent value="ux" className="space-y-12 outline-none">
+               <AISection 
+                title="UX Improvements"
+                issues={aiReport?.ux?.suggestions || []}
+                recommendations={aiReport?.ux?.suggestions.map((s: any) => `Implement: ${s}`) || []}
+                icon={<LayoutDashboard className="w-5 h-5" />}
+              />
+              <AISection 
+                title="Mobile Optimization"
+                issues={aiReport?.mobile?.issues || []}
+                recommendations={aiReport?.mobile?.recommendations || []}
+                icon={<Smartphone className="w-5 h-5" />}
+              />
+            </TabsContent>
+          </Tabs>
+        </section>
+
+        {/* Footer Info */}
+        <section className="pt-12 border-t border-slate-900 text-center space-y-4">
+           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-700">Audit Powered by WebsiteScope AI & Google Lighthouse</p>
+        </section>
+      </main>
     </div>
   );
 }
