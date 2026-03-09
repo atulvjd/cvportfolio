@@ -1,9 +1,6 @@
 import { Inngest } from "inngest";
 
-// Create a client to send and receive events
-export const inngest = new Inngest({ id: "website-scope" });
-
-// Event types for TypeScript safety
+// Define event types for TypeScript safety
 export type Events = {
   "audit/requested": {
     data: {
@@ -11,4 +8,16 @@ export type Events = {
       websiteUrl: string;
     };
   };
+  "audit/ai_analysis": {
+    data: {
+      auditId: string;
+      lighthouseData: any;
+    };
+  };
 };
+
+// Create a client to send and receive events
+export const inngest = new Inngest({ 
+  id: "website-scope",
+  schemas: (new Inngest.Schema()).setEvents<Events>()
+});
