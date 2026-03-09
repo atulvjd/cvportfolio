@@ -215,6 +215,10 @@ export default async function ReportPage({ params }: { params: { id: string } })
             <TabsContent value="overview" className="space-y-12 outline-none">
               <QuickFixes fixes={aiReport?.quick_fixes || []} />
               <TechnicalFixes fixes={aiReport?.technical_fixes || []} />
+              
+              <div className="flex justify-center pt-8">
+                <DownloadButton auditId={id} className="h-14 px-12 bg-blue-600 hover:bg-blue-700 text-lg font-black rounded-2xl shadow-2xl shadow-blue-500/20" />
+              </div>
             </TabsContent>
 
             <TabsContent value="performance" className="space-y-12 outline-none">
