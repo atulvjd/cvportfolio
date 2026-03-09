@@ -24,7 +24,7 @@ export async function runLighthouseAudit(url: string): Promise<LighthouseResult>
 
   try {
     // Determine the executable path for Chromium (Local vs Vercel)
-    const executablePath = await chromium.executablePath();
+    const executablePath = process.env.CHROMIUM_PATH || await chromium.executablePath();
 
     // Launch headless browser using Puppeteer
     browser = await puppeteer.launch({
