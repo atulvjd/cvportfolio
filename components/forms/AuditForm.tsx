@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/form"
 
 const formSchema = z.object({
-  website_url: z.string().url({ message: "Please enter a valid URL." }),
+  website_url: z.string().min(1, { message: "Please enter a website URL." }),
   email: z.string().email({ message: "Please enter a valid email address." }),
 })
 
