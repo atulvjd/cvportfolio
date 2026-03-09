@@ -225,6 +225,12 @@ export default async function ReportPage({ params }: { params: { id: string } })
                   tbt: results.raw_lighthouse_data?.audits?.['total-blocking-time']?.numericValue || 0,
                   cls: results.raw_lighthouse_data?.audits?.['cumulative-layout-shift']?.numericValue || 0,
                 }} 
+                scores={{
+                  performance: results.performance_score,
+                  seo: results.seo_score,
+                  accessibility: results.accessibility_score,
+                  ux: results.ux_score
+                }}
               />
               <AISection 
                 title="Performance Analysis"
