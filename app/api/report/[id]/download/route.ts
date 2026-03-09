@@ -36,23 +36,12 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     // 2. Generate PDF buffer
     const pdfBuffer = await generatePDFBuffer(audit, results);
 
-    // 3. (Optional) Upload to Storage for long-term access
-    // We'll do this in the background or await it if we want to ensure storage sync
-    try {
-      const { uploadPDFToStorage } = await import('@/services/report-generator');
-      await uploadPDFToStorage(id, pdfBuffer);
-    } catch (storageError) {
-      console.error('Storage Upload Error (Continuing anyway):', storageError);
-    }
+    // 3. Upload PDF to Supabase Storage
+    const { uploadPDFToStorage } = await import('@/services/report-generator');
+    const downloadUrl = await uploadPDFToStorage(id, pdfBuffer);
 
-    // 4. Return the PDF directly as a stream/buffer
-    return new Response(pdfBuffer, {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="WebsiteScope-Audit-${id}.pdf"`,
-      },
-    });
+    // 4. Return the download URL as a JSON response
+    return NextResponse.json({ downloadUrl });
 
   } catch (error: any) {
     console.error('PDF Download API Error:', error);
