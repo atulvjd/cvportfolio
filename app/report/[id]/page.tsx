@@ -147,9 +147,7 @@ export default async function ReportPage({ params }: { params: { id: string } })
             <Badge className="bg-green-500/10 text-green-500 border-none font-black px-3 py-1 text-[10px] uppercase tracking-widest flex items-center gap-1.5">
               <ShieldCheck className="w-3 h-3" /> Verified Audit
             </Badge>
-            <button className="hidden md:block px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-all text-xs">
-              Download PDF
-            </button>
+            <DownloadButton auditId={id} className="hidden md:flex bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-all text-xs" />
           </div>
         </div>
       </header>
